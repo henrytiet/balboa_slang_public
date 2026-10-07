@@ -19,5 +19,73 @@ void compute_main(uint2 tid : SV_DispatchThreadID,
     }
 
     image[tid] = float4(1.0);
-    // TODO: your code here
+    // TODO: your code here    
+    int numIntersects=0;
+    for(int i=0;i<num_polyline;i++){
+        float2 p0=polyline[i];
+        float2 p1;
+        if(i==num_polyline-1) {
+            if(is_closed) {
+                p1=polyline[0];
+            }
+        } else {
+            p1=polyline[i+1];
+        }
+        float p0y=height-p0.y; //inversed height to match coordinate plane of hw
+        float p1y=height-p1.y;
+        float dx = p1.x - p0.x; //difference of x
+        float dy = p1y - p0y; //difference of y
+        float t=tid.y-(p0y);
+
+        // nonzero algorithm
+        if (p0y <=tid.y && tid.y < p1y) {
+            t = t / (p1y-p0y);
+            if ((p0.x+t*dx) >= tid.x) {
+                numIntersects++;
+            }
+        }
+        else if (p1y <= tid.y && tid.y < p0y) {
+            t= t / (p1y-p0y);
+            if ((p0.x+t*dx) >= tid.x) {
+                numIntersects--;
+            }
+        }
+
+        
+        
+        
+    }
+
+    if(numIntersects!=0 && use_fill_color){
+        image[tid]=float4(fill_color,1.0);
+    }
+
+    for(int i=0;i<num_polyline;i++){
+        float2 p0=polyline[i];
+        float2 p1;
+        if(i==num_polyline-1) {
+            if(is_closed) {
+                p1=polyline[0];
+            }
+        } else {
+            p1=polyline[i+1];
+        }
+        float p0y=height-p0.y; //inversed height to match coordinate plane of hw
+        float p1y=height-p1.y;
+        float l;
+        float2 q=float2(tid.x, height-tid.y);
+        float2 d = p1 - p0;
+        float len = length(d);
+        l=dot(d, q-p0) / len;
+        float2 qprime=p0+l*d/len;
+        if(l>0 && l<len && length(q-qprime) < stroke_width/2.0 && use_stroke_color) {
+            image[tid]=float4(stroke_color, 1.0);
+            
+        }
+        if(use_stroke_color) {
+            if(length(q-p0) < stroke_width/2.0 || length(q-p1) < stroke_width/2.0) {
+                image[tid]=float4(stroke_color, 1.0);
+            }
+        }
+    }
 }
