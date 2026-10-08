@@ -61,6 +61,8 @@ void compute_main(uint2 tid : SV_DispatchThreadID,
     }
 
     for(int i=0;i<num_polyline;i++){
+        
+        if(i==num_polyline-1 && !is_closed) break;
         float2 p0=polyline[i];
         float2 p1;
         if(i==num_polyline-1) {
@@ -82,8 +84,9 @@ void compute_main(uint2 tid : SV_DispatchThreadID,
             image[tid]=float4(stroke_color, 1.0);
             
         }
-        if(use_stroke_color) {
-            if(length(q-p0) < stroke_width/2.0 || length(q-p1) < stroke_width/2.0) {
+        // round joins
+        if(use_stroke_color && (is_closed || i!=0)) {
+            if(length(q-p0) < stroke_width/2.0) {
                 image[tid]=float4(stroke_color, 1.0);
             }
         }
